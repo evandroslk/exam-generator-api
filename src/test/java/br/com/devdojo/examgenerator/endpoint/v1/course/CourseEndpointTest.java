@@ -3,6 +3,7 @@ package br.com.devdojo.examgenerator.endpoint.v1.course;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Collections;
+import java.util.List;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -13,6 +14,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -43,7 +45,7 @@ public class CourseEndpointTest {
 
 	private Course course = mockCourse();
 
-	private static Course mockCourse() {
+	public static Course mockCourse() {
 		Course course = new Course();
 		course.setId(1L);
 		course.setName("Java");
@@ -68,8 +70,8 @@ public class CourseEndpointTest {
 	@Before
 	public void setup() {
 		BDDMockito.when(courseRepository.findOne(course.getId())).thenReturn(course);
-		BDDMockito.when(courseRepository.listCourses("")).thenReturn(Collections.singletonList(course));
-		BDDMockito.when(courseRepository.listCourses("java")).thenReturn(Collections.singletonList(course));
+		BDDMockito.when(courseRepository.listCoursesByName("")).thenReturn(Collections.singletonList(course));
+		BDDMockito.when(courseRepository.listCoursesByName("java")).thenReturn(Collections.singletonList(course));
 	}
 
 	@Test
@@ -87,10 +89,11 @@ public class CourseEndpointTest {
 	}
 
 	@Test
-	public void listAllCoursesWhenNameDoesNotExistsShouldReturn404() throws Exception {
-		ResponseEntity<String> exchange = testRestTemplate.exchange("/v1/professor/course/list?name=xaxa",
-				HttpMethod.GET, professorHeader, String.class);
-		assertThat(exchange.getStatusCodeValue()).isEqualTo(404);
+	public void listAllCoursesWhenNameDoesNotExistsShouldReturnEmptyList() throws Exception {
+		ResponseEntity<List<Course>> exchange = testRestTemplate.exchange("/v1/professor/course/list?name=xaxa",
+				HttpMethod.GET, professorHeader, new ParameterizedTypeReference<List<Course>>() {
+				});
+		assertThat(exchange.getBody()).isEmpty();
 	}
 
 	@Test

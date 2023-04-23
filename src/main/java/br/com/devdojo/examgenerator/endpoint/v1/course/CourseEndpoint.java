@@ -5,6 +5,7 @@ import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,8 +16,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import br.com.devdojo.examgenerator.endpoint.v1.genericservice.GenericService;
 import br.com.devdojo.examgenerator.persistence.model.Course;
 import br.com.devdojo.examgenerator.persistence.repository.CourseRepository;
+import br.com.devdojo.examgenerator.persistence.repository.QuestionRepository;
 import br.com.devdojo.examgenerator.util.EndpointUtil;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -26,14 +29,17 @@ import io.swagger.annotations.ApiParam;
 public class CourseEndpoint {
 
 	private final CourseRepository courseRepository;
+	private final QuestionRepository questionRepository;
 	private final EndpointUtil endpointUtil;
-	private final CourseService courseService;
+	private final GenericService service;
 
 	@Autowired
-	public CourseEndpoint(CourseRepository courseRepository, EndpointUtil endpointUtil, CourseService courseService) {
+	public CourseEndpoint(CourseRepository courseRepository, EndpointUtil endpointUtil, 
+			GenericService service, QuestionRepository questionRepository) {
 		this.courseRepository = courseRepository;
 		this.endpointUtil = endpointUtil;
-		this.courseService = courseService;
+		this.service = service;
+		this.questionRepository = questionRepository;
 	}
 
 	@ApiOperation(value = "Return a course based on it's id", response = Course.class)
@@ -46,21 +52,23 @@ public class CourseEndpoint {
 	@GetMapping(path = "list")
 	public ResponseEntity<?> listCourses(
 			@ApiParam("Course name") @RequestParam(value = "name", defaultValue = "") String name) {
-		return endpointUtil.returnObjectOrNotFound(courseRepository.listCourses(name));
+		return new ResponseEntity<>(courseRepository.listCoursesByName(name), HttpStatus.OK);
 	}
 
 	@ApiOperation(value = "Delete a specific course and return 200 OK with no body")
 	@DeleteMapping(path = "{id}")
+	@Transactional
 	public ResponseEntity<?> delete(@PathVariable long id) {
-		courseService.throwResourceNotFoundIfCourseDoesNotExist(id);
+		service.throwResourceNotFoundIfDoesNotExist(id, courseRepository, "Course not found");
 		courseRepository.delete(id);
+		questionRepository.deleteAllQuestionsRelatedToCourse(id);
 		return new ResponseEntity<>(HttpStatus.OK);
 	}
 
 	@ApiOperation(value = "Update a course and return 200 OK with no body")
 	@PutMapping
 	public ResponseEntity<?> update(@Valid @RequestBody Course course) {
-		courseService.throwResourceNotFoundIfCourseDoesNotExist(course);
+		service.throwResourceNotFoundIfDoesNotExist(course, courseRepository, "Course not found");
 		courseRepository.save(course);
 		return new ResponseEntity<>(HttpStatus.OK);
 	}
