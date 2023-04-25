@@ -16,10 +16,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import br.com.devdojo.examgenerator.endpoint.v1.deleteservice.CascadeDeleteService;
 import br.com.devdojo.examgenerator.endpoint.v1.genericservice.GenericService;
 import br.com.devdojo.examgenerator.persistence.model.Course;
 import br.com.devdojo.examgenerator.persistence.repository.CourseRepository;
-import br.com.devdojo.examgenerator.persistence.repository.QuestionRepository;
 import br.com.devdojo.examgenerator.util.EndpointUtil;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -29,17 +29,17 @@ import io.swagger.annotations.ApiParam;
 public class CourseEndpoint {
 
 	private final CourseRepository courseRepository;
-	private final QuestionRepository questionRepository;
 	private final EndpointUtil endpointUtil;
 	private final GenericService service;
+	private final CascadeDeleteService cascadeDeleteService;
 
 	@Autowired
 	public CourseEndpoint(CourseRepository courseRepository, EndpointUtil endpointUtil, 
-			GenericService service, QuestionRepository questionRepository) {
+			GenericService service, CascadeDeleteService cascadeDeleteService) {
 		this.courseRepository = courseRepository;
 		this.endpointUtil = endpointUtil;
 		this.service = service;
-		this.questionRepository = questionRepository;
+		this.cascadeDeleteService = cascadeDeleteService;
 	}
 
 	@ApiOperation(value = "Return a course based on it's id", response = Course.class)
@@ -55,20 +55,24 @@ public class CourseEndpoint {
 		return new ResponseEntity<>(courseRepository.listCoursesByName(name), HttpStatus.OK);
 	}
 
-	@ApiOperation(value = "Delete a specific course and return 200 OK with no body")
+	@ApiOperation(value = "Delete a specific course and all related questions and choices and"
+			+ " return 200 OK with no body")
 	@DeleteMapping(path = "{id}")
 	@Transactional
 	public ResponseEntity<?> delete(@PathVariable long id) {
-		service.throwResourceNotFoundIfDoesNotExist(id, courseRepository, "Course not found");
-		courseRepository.delete(id);
-		questionRepository.deleteAllQuestionsRelatedToCourse(id);
+		validateCourseExistenceOnDB(id);
+		cascadeDeleteService.deleteCourseAndAllRelatedEntities(id);
 		return new ResponseEntity<>(HttpStatus.OK);
+	}
+
+	private void validateCourseExistenceOnDB(long id) {
+		service.throwResourceNotFoundIfDoesNotExist(id, courseRepository, "Course not found");
 	}
 
 	@ApiOperation(value = "Update a course and return 200 OK with no body")
 	@PutMapping
 	public ResponseEntity<?> update(@Valid @RequestBody Course course) {
-		service.throwResourceNotFoundIfDoesNotExist(course, courseRepository, "Course not found");
+		validateCourseExistenceOnDB(course.getId());
 		courseRepository.save(course);
 		return new ResponseEntity<>(HttpStatus.OK);
 	}

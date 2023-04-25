@@ -47,7 +47,7 @@ public class QuestionEndpointTest {
 
 	private Question question = mockQuestion();
 
-	private static Question mockQuestion() {
+	public static Question mockQuestion() {
 		Question question = new Question();
 		question.setId(1L);
 		question.setTitle("What is class?");
@@ -174,7 +174,6 @@ public class QuestionEndpointTest {
 		Question question = questionRepository.findOne(1L);
 		question.setCourse(new Course());
 		assertThat(createQuestion(question).getStatusCodeValue()).isEqualTo(404);
-
 	}
 
 }

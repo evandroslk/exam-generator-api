@@ -1,4 +1,4 @@
-package br.com.devdojo.examgenerator.endpoint.v1.question;
+package br.com.devdojo.examgenerator.endpoint.v1.assignment;
 
 import javax.validation.Valid;
 
@@ -18,77 +18,78 @@ import org.springframework.web.bind.annotation.RestController;
 
 import br.com.devdojo.examgenerator.endpoint.v1.deleteservice.CascadeDeleteService;
 import br.com.devdojo.examgenerator.endpoint.v1.genericservice.GenericService;
-import br.com.devdojo.examgenerator.persistence.model.Question;
+import br.com.devdojo.examgenerator.persistence.model.Assignment;
+import br.com.devdojo.examgenerator.persistence.repository.AssignmentRepository;
 import br.com.devdojo.examgenerator.persistence.repository.CourseRepository;
-import br.com.devdojo.examgenerator.persistence.repository.QuestionRepository;
 import br.com.devdojo.examgenerator.util.EndpointUtil;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 
 @RestController
-@RequestMapping("v1/professor/course/question")
-public class QuestionEndpoint {
+@RequestMapping("v1/professor/course/assignment")
+public class AssignmentEndpoint {
 
-	private final QuestionRepository questionRepository;
+	private final AssignmentRepository assignmentRepository;
 	private final CourseRepository courseRepository;
 	private final EndpointUtil endpointUtil;
 	private final GenericService service;
 	private final CascadeDeleteService cascadeDeleteService;
 
 	@Autowired
-	public QuestionEndpoint(QuestionRepository questionRepository, EndpointUtil endpointUtil, 
+	public AssignmentEndpoint(AssignmentRepository assignmentRepository, EndpointUtil endpointUtil, 
 			GenericService service, CourseRepository courseRepository,
 			CascadeDeleteService cascadeDeleteService) {
-		this.questionRepository = questionRepository;
+		this.assignmentRepository = assignmentRepository;
 		this.endpointUtil = endpointUtil;
 		this.service = service;
 		this.courseRepository = courseRepository;
 		this.cascadeDeleteService = cascadeDeleteService;
 	}
 
-	@ApiOperation(value = "Return a question based on it's id", response = Question.class)
+	@ApiOperation(value = "Return an assignment based on it's id", response = Assignment.class)
 	@GetMapping(path = "{id}")
-	public ResponseEntity<?> getQuestionById(@PathVariable long id) {
-		return endpointUtil.returnObjectOrNotFound(questionRepository.findOne(id));
+	public ResponseEntity<?> getAssignmentById(@PathVariable long id) {
+		return endpointUtil.returnObjectOrNotFound(assignmentRepository.findOne(id));
 	}
 
-	@ApiOperation(value = "Return a list of questions related to course", response = Question[].class)
+	@ApiOperation(value = "Return a list of assignments related to course", response = Assignment[].class)
 	@GetMapping(path = "/list/{courseId}")
-	public ResponseEntity<?> listQuestions(
+	public ResponseEntity<?> listAssignments(
 			@ApiParam("Course id") @PathVariable long courseId,
-			@ApiParam("Question title") @RequestParam(value = "title", defaultValue = "") String title) {
-		return new ResponseEntity<>(questionRepository.listQuestionsByCourseAndTitle(courseId, title), 
+			@ApiParam("Assigment title") @RequestParam(value = "title", defaultValue = "") String title) {
+		return new ResponseEntity<>(assignmentRepository.listAssignmentsByCourseAndTitle(courseId, title), 
 				HttpStatus.OK);
 	}
 
-	@ApiOperation(value = "Delete a specific question and all related choices and "
+	@ApiOperation(value = "Delete a specific assigment and "
 			+ "return 200 OK with no body")
 	@DeleteMapping(path = "{id}")
 	@Transactional
 	public ResponseEntity<?> delete(@PathVariable long id) {
-		validateQuestionExistenceOnDB(id);
-		cascadeDeleteService.deleteQuestionAndAllRelatedEntities(id);
+		validateAssignmentExistenceOnDB(id);
+		cascadeDeleteService.deleteAssignmentAndAllRelatedEntities(id);
 		return new ResponseEntity<>(HttpStatus.OK);
 	}
 
-	private void validateQuestionExistenceOnDB(long id) {
-		service.throwResourceNotFoundIfDoesNotExist(id, questionRepository, "Question not found");
+	private void validateAssignmentExistenceOnDB(long id) {
+		service.throwResourceNotFoundIfDoesNotExist(id, assignmentRepository, "Assignment not found");
 	}
 
-	@ApiOperation(value = "Update question and return 200 OK with no body")
+	@ApiOperation(value = "Update assigment and return 200 OK with no body")
 	@PutMapping
-	public ResponseEntity<?> update(@Valid @RequestBody Question question) {
-		validateQuestionExistenceOnDB(question.getId());
-		questionRepository.save(question);
+	public ResponseEntity<?> update(@Valid @RequestBody Assignment assignment) {
+		validateAssignmentExistenceOnDB(assignment.getId());
+		assignmentRepository.save(assignment);
 		return new ResponseEntity<>(HttpStatus.OK);
 	}
 
-	@ApiOperation(value = "Create a question and return the question created")
+	@ApiOperation(value = "Create a assigment and return the assigment created")
 	@PostMapping
-	public ResponseEntity<?> create(@Valid @RequestBody Question question) {
-		service.throwResourceNotFoundIfDoesNotExist(question.getCourse(), courseRepository, "Course not found");
-		question.setProfessor(endpointUtil.extractProfessorFromToken());
-		return new ResponseEntity<>(questionRepository.save(question), HttpStatus.OK);
+	public ResponseEntity<?> create(@Valid @RequestBody Assignment assignment) {
+		service.throwResourceNotFoundIfDoesNotExist(assignment.getCourse(), courseRepository,
+				"Course not found");
+		assignment.setProfessor(endpointUtil.extractProfessorFromToken());
+		return new ResponseEntity<>(assignmentRepository.save(assignment), HttpStatus.OK);
 	}
 
 }

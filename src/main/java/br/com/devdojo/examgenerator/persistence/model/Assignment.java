@@ -1,25 +1,24 @@
 package br.com.devdojo.examgenerator.persistence.model;
 
-import java.util.List;
+import java.time.LocalDateTime;
 
 import javax.persistence.Entity;
 import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
 
 import org.hibernate.validator.constraints.NotEmpty;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import io.swagger.annotations.ApiModelProperty;
 
 @Entity
-public class Question extends AbstractEntity {
+public class Assignment extends AbstractEntity {
 
 	private static final long serialVersionUID = 1L;
 
 	@NotEmpty(message = "The field title cannot be empty")
-	@ApiModelProperty(notes = "The title of the question")
+	@ApiModelProperty(notes = "The title of the assignment")
 	private String title;
+
+	private LocalDateTime createdAt = LocalDateTime.now();
 
 	@ManyToOne(optional = false)
 	private Course course;
@@ -27,16 +26,20 @@ public class Question extends AbstractEntity {
 	@ManyToOne(optional = false)
 	private Professor professor;
 
-	@OneToMany(mappedBy = "question")
-	@JsonIgnore
-	private List<Choice> choices;
-
 	public String getTitle() {
 		return title;
 	}
 
 	public void setTitle(String title) {
 		this.title = title;
+	}
+
+	public LocalDateTime getCreatedAt() {
+		return createdAt;
+	}
+
+	public void setCreatedAt(LocalDateTime createdAt) {
+		this.createdAt = createdAt;
 	}
 
 	public Course getCourse() {
@@ -53,14 +56,6 @@ public class Question extends AbstractEntity {
 
 	public void setProfessor(Professor professor) {
 		this.professor = professor;
-	}
-
-	public List<Choice> getChoices() {
-		return choices;
-	}
-
-	public void setChoices(List<Choice> choices) {
-		this.choices = choices;
 	}
 
 }
